@@ -1,5 +1,3 @@
-import type { ForwardRefExoticComponent, RefAttributes } from 'react';
-
 export type ChartConfig = Record<
   string,
   {
@@ -19,7 +17,7 @@ interface ChartContainerProps {
   children: React.ReactNode;
 }
 
-export const ChartContainer: React.FC<ChartContainerProps> = ({ config, className, children }) => {
+export const ChartContainer: React.FC<ChartContainerProps> = ({ className, children }) => {
   return <div className={className}>{children}</div>;
 };
 
@@ -28,17 +26,17 @@ interface ChartTooltipProps {
   cursor?: boolean;
 }
 
-export const ChartTooltip: React.FC<ChartTooltipProps> = ({ content, cursor }) => {
+export const ChartTooltip: React.FC<ChartTooltipProps> = () => {
   return null; // Tooltip handling is done by recharts directly
 };
 
 interface ChartTooltipContentProps {
   active?: boolean;
-  payload?: any[];
+  payload?: { name: string; value: number; color: string; dataKey: string }[];
   label?: string;
   indicator?: 'line' | 'dot' | 'dashed';
-  labelFormatter?: (value: any) => string;
-  formatter?: (value: any, name: string) => string;
+  labelFormatter?: (value: string) => string;
+  formatter?: (value: number, name: string) => string;
   hideLabel?: boolean;
   hideIndicator?: boolean;
   className?: string;

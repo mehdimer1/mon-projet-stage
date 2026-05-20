@@ -11,7 +11,7 @@ interface DeleteConfirmDialogProps {
 }
 
 export function DeleteConfirmDialog({ productTitle, onConfirm, onCancel }: DeleteConfirmDialogProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen] = useState(true);
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onCancel()}>
@@ -25,7 +25,7 @@ export function DeleteConfirmDialog({ productTitle, onConfirm, onCancel }: Delet
             </Modal.Header>
             <Modal.Body>
               <Typography.P>
-                Êtes-vous sûr de vouloir supprimer "{productTitle}" ? Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer &ldquo;{productTitle}&rdquo; ? Cette action est irréversible.
               </Typography.P>
             </Modal.Body>
             <Modal.Footer>

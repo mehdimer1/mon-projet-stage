@@ -19,7 +19,7 @@ interface AddProductButtonProps {
   sellerId?: string;
 }
 
-export function AddProductButton({ sellerId }: AddProductButtonProps) {
+export function AddProductButton({}: AddProductButtonProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [imagePreview, setImagePreview] = React.useState<string>('');
 

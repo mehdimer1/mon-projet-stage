@@ -56,7 +56,7 @@ const STATUS_MAP: Record<Product['status'], { label: string; color: 'success' | 
   en_attente: { label: 'En attente', color: 'warning' },
 };
 
-export function ListeProduit({ sellerId }: ListeProduitProps) {
+export function ListeProduit({}: ListeProduitProps) {
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: 'title',
     direction: 'ascending',

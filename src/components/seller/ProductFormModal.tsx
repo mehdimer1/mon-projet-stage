@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { Product } from "@/types/product";
 
 interface ProductFormModalProps {
@@ -18,7 +19,7 @@ export default function ProductFormModal({
   product,
   mode,
 }: ProductFormModalProps) {
-  const [formData, setFormData] = useState({
+  const defaultFormState = {
     title: "",
     category: "",
     description: "",
@@ -28,15 +29,12 @@ export default function ProductFormModal({
     warranty: "",
     rating: 0,
     sales: 0,
-    status: "new" as "new" | "featured",
+    status: "new" as const,
     image: "",
-  });
+  };
 
-  const [imagePreview, setImagePreview] = useState("");
-
-  useEffect(() => {
-    if (mode === "edit" && product) {
-      setFormData({
+  const initialData = mode === "edit" && product
+    ? {
         title: product.title,
         category: product.category,
         description: product.description,
@@ -46,31 +44,15 @@ export default function ProductFormModal({
         warranty: product.warranty,
         rating: product.rating,
         sales: product.sales,
-        status: product.status,
+        status: product.status as "new" | "featured",
         image: product.image,
-      });
-      setImagePreview(product.image);
-    } else {
-      resetForm();
-    }
-  }, [product, mode, isOpen]);
+      }
+    : defaultFormState;
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      category: "",
-      description: "",
-      salePrice: 0,
-      originalPrice: 0,
-      discount: 0,
-      warranty: "",
-      rating: 0,
-      sales: 0,
-      status: "new",
-      image: "",
-    });
-    setImagePreview("");
-  };
+  const [formData, setFormData] = useState(initialData);
+  const [imagePreview, setImagePreview] = useState(
+    mode === "edit" && product ? product.image : ""
+  );
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,7 +71,6 @@ export default function ProductFormModal({
     e.preventDefault();
     onSave(formData);
     onClose();
-    resetForm();
   };
 
   if (!isOpen) return null;
@@ -121,9 +102,11 @@ export default function ProductFormModal({
             </label>
             <div className="flex items-center gap-4">
               {imagePreview && (
-                <img
+                <Image
                   src={imagePreview}
                   alt="Preview"
+                  width={80}
+                  height={80}
                   className="w-20 h-20 rounded-lg object-cover border border-zinc-200"
                 />
               )}

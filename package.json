@@ -34,5 +34,5 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ] 
+  ]
 }

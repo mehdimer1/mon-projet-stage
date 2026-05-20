@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { products as initialProducts } from "@/data/products";
 import { Product } from "@/types/product";
 import ProductFormModal from "./ProductFormModal";
@@ -43,8 +44,8 @@ export default function ProductTable() {
 
   const sortProducts = (productsToSort: Product[]) => {
     return [...productsToSort].sort((a, b) => {
-      let aValue: any = a[sortBy];
-      let bValue: any = b[sortBy];
+      const aValue = a[sortBy];
+      const bValue = b[sortBy];
       
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortOrder === "asc"
@@ -284,9 +285,11 @@ export default function ProductTable() {
                       />
                     </td>
                     <td className="px-3 py-2.5">
-                      <img
+                      <Image
                         src={`${p.image}?w=72&h=72&fit=crop&auto=format`}
                         alt={p.title}
+                        width={36}
+                        height={36}
                         className="w-9 h-9 rounded-md object-cover border border-zinc-200 block"
                       />
                     </td>
@@ -374,22 +377,26 @@ export default function ProductTable() {
 
       {/* Modales */}
       <ProductFormModal
+        key="add"
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddProduct}
         mode="add"
       />
 
-      <ProductFormModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onSave={handleEditProduct}
-        product={selectedProduct}
-        mode="edit"
-      />
+      {selectedProduct && (
+        <ProductFormModal
+          key={`edit-${selectedProduct.id}`}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onSave={handleEditProduct}
+          product={selectedProduct}
+          mode="edit"
+        />
+      )}
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
