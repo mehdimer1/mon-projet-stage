@@ -285,7 +285,7 @@ export default function ProductTable() {
                       />
                     </td>
                     <td className="px-3 py-2.5">
-                      <Image
+                      <img
                         src={`${p.image}?w=72&h=72&fit=crop&auto=format`}
                         alt={p.title}
                         width={36}
