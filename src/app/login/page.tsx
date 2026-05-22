@@ -8,6 +8,7 @@ import { Input } from "@heroui/react";
 export default function LoginPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -15,8 +16,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Ici tu peux ajouter la vérification des identifiants plus tard
-    router.push("/dashboard");  // ← Redirige vers dashboard (page vendeur)
+    setError("");
+    
+    
+    //  email = admin@test.com, password = admin123
+    if (formData.email === "admin@test.com" && formData.password === "admin123") {
+      router.push("/dashboard");
+    } else {
+      setError("Email ou mot de passe incorrect");
+    }
   };
 
   return (
@@ -30,6 +38,13 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          {/* Affichage de l'erreur */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
+
           {/* Email */}
           <div className="mb-4">
             <Input
