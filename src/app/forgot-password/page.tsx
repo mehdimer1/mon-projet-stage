@@ -3,14 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@heroui/react";
+import { api } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resetLink, setResetLink] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await api.auth.forgotPassword(email);
+      if (res.data?.reset_link) {
+        setResetLink(res.data.reset_link);
+      }
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,11 +53,16 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
+              {error && (
+                <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                disabled={loading}
+                className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                Envoyer le lien
+                {loading ? "Envoi en cours..." : "Envoyer le lien"}
               </button>
             </>
           ) : (
@@ -56,6 +78,17 @@ export default function ForgotPasswordPage() {
               <p className="text-zinc-500 mb-6">
                 Un lien de réinitialisation a été envoyé à {email}
               </p>
+              {resetLink && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700 mb-2 font-medium">Mode debug - Lien de réinitialisation :</p>
+                  <a
+                    href={resetLink}
+                    className="text-sm text-blue-600 underline break-all hover:text-blue-800"
+                  >
+                    {resetLink}
+                  </a>
+                </div>
+              )}
               <Link href="/login">
                 <button className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
                   Retour à la connexion

@@ -1,14 +1,37 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { products } from "@/data/products";
 import Link from "next/link";
+import Image from "next/image";
+import { api } from "@/lib/api";
+import { snakeToCamel } from "@/lib/utils";
+import { Product } from "@/types/product";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const productId = parseInt(id as string);
-  const product = products.find((p) => p.id === productId) || null;
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const productId = parseInt(id as string);
+    api.products.get(productId).then((res) => {
+      setProduct(snakeToCamel(res.data) as Product);
+    }).catch(() => {
+      setProduct(null);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
+        <p className="text-zinc-500">Chargement...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -39,10 +62,12 @@ export default function ProductDetailPage() {
           <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
             {/* Image */}
             <div className="relative h-80 md:h-96 rounded-xl overflow-hidden bg-slate-100">
-              <img
-                src={product.image}
+              <Image
+                src={product.image || "/placeholder.svg"}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
               {product.discount > 0 && (
                 <div className="absolute top-4 right-4 bg-red-500 text-white font-bold px-3 py-1 rounded-full">

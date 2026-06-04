@@ -1,15 +1,15 @@
 "use client";
 
-import { products } from "@/data/products";
+import { Product } from "@/types/product";
 import ProductCard from "./ProductCard";
 
 interface ProductGridProps {
+  products: Product[];
   searchTerm?: string;
   categoryFilter?: string;
 }
 
-export default function ProductGrid({ searchTerm = "", categoryFilter = "" }: ProductGridProps) {
-  // Filtrer les produits
+export default function ProductGrid({ products, searchTerm = "", categoryFilter = "" }: ProductGridProps) {
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       searchTerm === "" ||

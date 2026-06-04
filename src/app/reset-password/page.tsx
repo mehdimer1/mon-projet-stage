@@ -4,12 +4,15 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@heroui/react";
+import { api } from "@/lib/api";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [isVisible, setIsVisible] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -17,13 +20,23 @@ function ResetPasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas");
+      setError("Les mots de passe ne correspondent pas");
       return;
     }
-    
-    setIsSubmitted(true);
+
+    setLoading(true);
+
+    try {
+      await api.auth.resetPassword(token!, formData.password);
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!token) {
@@ -83,11 +96,16 @@ function ResetPasswordForm() {
                 </button>
               </div>
 
+              {error && (
+                <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                disabled={loading}
+                className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                Réinitialiser
+                {loading ? "Réinitialisation..." : "Réinitialiser"}
               </button>
             </>
           ) : (

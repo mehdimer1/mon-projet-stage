@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductGrid from "@/components/buyer/ProductGrid";
-import { products } from "@/data/products";
+import { api } from "@/lib/api";
+import { snakeToCamel } from "@/lib/utils";
+import type { Product } from "@/types/product";
 
 export default function BuyerPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
+  useEffect(() => {
+    api.products.list().then((res) => {
+      setProducts(snakeToCamel(res.data) as Product[]);
+    }).catch(() => {
+      setProducts([]);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, []);
 
   const categories = ["Toutes", ...new Set(products.map((p) => p.category))];
 
@@ -61,7 +74,13 @@ export default function BuyerPage() {
 
       {/* Grille des produits */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <ProductGrid searchTerm={searchTerm} categoryFilter={categoryFilter} />
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-zinc-500">Chargement...</p>
+          </div>
+        ) : (
+          <ProductGrid products={products} searchTerm={searchTerm} categoryFilter={categoryFilter} />
+        )}
       </div>
     </div>
   );

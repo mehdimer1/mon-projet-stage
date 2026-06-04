@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { products as initialProducts } from "@/data/products";
+import { api } from "@/lib/api";
+import { snakeToCamel } from "@/lib/utils";
 import { Product } from "@/types/product";
 import ProductFormModal from "./ProductFormModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
@@ -24,8 +25,17 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function toSnakeCase(data: Record<string, unknown>): Record<string, unknown> {
+  const snake: Record<string, unknown> = {};
+  for (const key in data) {
+    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    snake[snakeKey] = data[key];
+  }
+  return snake;
+}
+
 export default function ProductTable() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
@@ -34,34 +44,48 @@ export default function ProductTable() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
-  
- 
+
   const [sortBy, setSortBy] = useState<keyof Product>("sales");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  
+
   const itemsPerPage = 5;
 
+  useEffect(() => {
+    api.products.list().then((res) => {
+      setProducts(snakeToCamel(res.data) as Product[]);
+    }).catch(() => {
+      setProducts([]);
+    });
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await api.products.list();
+      setProducts(snakeToCamel(res.data) as Product[]);
+    } catch {
+      setProducts([]);
+    }
+  }, []);
 
   const sortProducts = (productsToSort: Product[]) => {
     return [...productsToSort].sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
-      
+
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortOrder === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
+
       if (typeof aValue === "number" && typeof bValue === "number") {
         return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
       }
-      
+
       return 0;
     });
   };
 
-  
   const filteredProducts = products.filter((p) =>
     searchTerm === "" ||
     p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,15 +93,12 @@ export default function ProductTable() {
     p.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- 
   const sortedProducts = sortProducts(filteredProducts);
 
-  // Pagination (utilise sortedProducts au lieu de filteredProducts)
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
 
- 
   const handleSort = (column: keyof Product) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -88,18 +109,15 @@ export default function ProductTable() {
     setCurrentPage(1);
   };
 
-
   const getSortIcon = (column: keyof Product) => {
     if (sortBy !== column) return " ↕️";
     return sortOrder === "asc" ? " ↑" : " ↓";
   };
 
-  // Changement de page
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
-  // Gestion de la sélection
   const toggleSelect = (productId: number) => {
     setSelectedProducts(prev =>
       prev.includes(productId)
@@ -116,44 +134,50 @@ export default function ProductTable() {
     }
   };
 
-  // Ajouter un produit
-  const handleAddProduct = (newProduct: Omit<Product, "id">) => {
-    const maxId = Math.max(...products.map(p => p.id), 0);
-    const productWithId = {
-      ...newProduct,
-      id: maxId + 1,
-    };
-    setProducts([...products, productWithId]);
+  const handleAddProduct = async (newProduct: Omit<Product, "id">) => {
+    try {
+      await api.products.create(toSnakeCase(newProduct));
+      await fetchProducts();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erreur lors de la création");
+    }
   };
 
-  // Modifier un produit
-  const handleEditProduct = (updatedProduct: Omit<Product, "id">) => {
+  const handleEditProduct = async (updatedProduct: Omit<Product, "id">) => {
     if (selectedProduct) {
-      const updatedProducts = products.map(p =>
-        p.id === selectedProduct.id
-          ? { ...updatedProduct, id: selectedProduct.id }
-          : p
-      );
-      setProducts(updatedProducts);
+      try {
+        await api.products.update(selectedProduct.id, toSnakeCase(updatedProduct));
+        await fetchProducts();
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : "Erreur lors de la modification");
+      }
     }
     setIsEditModalOpen(false);
     setSelectedProduct(null);
   };
 
-  // Supprimer un produit
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (selectedProduct) {
-      setProducts(products.filter(p => p.id !== selectedProduct.id));
-      setSelectedProducts(selectedProducts.filter(id => id !== selectedProduct.id));
+      try {
+        await api.products.delete(selectedProduct.id);
+        await fetchProducts();
+        setSelectedProducts(selectedProducts.filter(id => id !== selectedProduct.id));
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : "Erreur lors de la suppression");
+      }
     }
     setIsDeleteModalOpen(false);
     setSelectedProduct(null);
   };
 
-  // Suppression groupée
-  const handleBulkDelete = () => {
-    setProducts(products.filter(p => !selectedProducts.includes(p.id)));
-    setSelectedProducts([]);
+  const handleBulkDelete = async () => {
+    try {
+      await api.products.bulkDelete(selectedProducts);
+      await fetchProducts();
+      setSelectedProducts([]);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    }
     setIsDeleteModalOpen(false);
     setIsBulkDelete(false);
   };
@@ -285,13 +309,19 @@ export default function ProductTable() {
                       />
                     </td>
                     <td className="px-3 py-2.5">
-                      <img
-                        src={`${p.image}?w=72&h=72&fit=crop&auto=format`}
-                        alt={p.title}
-                        width={36}
-                        height={36}
-                        className="w-9 h-9 rounded-md object-cover border border-zinc-200 block"
-                      />
+                      {p.image ? (
+                        <Image
+                          src={p.image.startsWith('data:') ? p.image : `${p.image}?w=72&h=72&fit=crop&auto=format`}
+                          alt={p.title}
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 rounded-md object-cover border border-zinc-200 block"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-md bg-zinc-100 border border-zinc-200 flex items-center justify-center text-xs text-zinc-400">
+                          {p.title.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2.5">
                       <p className="font-medium text-zinc-900 truncate text-[13px]">{p.title}</p>

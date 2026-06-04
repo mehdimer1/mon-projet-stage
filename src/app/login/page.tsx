@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@heroui/react";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -17,13 +19,16 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
-    
-    //  email = admin@test.com, password = admin123
-    if (formData.email === "admin@test.com" && formData.password === "admin123") {
+    setLoading(true);
+
+    try {
+      const res = await api.auth.login(formData.email, formData.password);
+      localStorage.setItem("token", res.data.token);
       router.push("/dashboard");
-    } else {
-      setError("Email ou mot de passe incorrect");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Email ou mot de passe incorrect");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,9 +93,10 @@ export default function LoginPage() {
           {/* Bouton de connexion */}
           <button
             type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            Se connecter
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
 
           {/* Lien vers inscription */}

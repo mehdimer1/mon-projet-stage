@@ -4,10 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@heroui/react";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,13 +20,24 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas");
+      setError("Les mots de passe ne correspondent pas");
       return;
     }
-    
-    router.push("/login");
+
+    setLoading(true);
+
+    try {
+      const res = await api.auth.register(formData.name, formData.email, formData.password);
+      localStorage.setItem("token", res.data.token);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,6 +51,11 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+              {error}
+            </div>
+          )}
           <div className="mb-4">
             <Input
               type="text"
@@ -89,9 +108,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            S'inscrire
+            {loading ? "Inscription..." : "S'inscrire"}
           </button>
 
           <div className="text-center mt-6">
