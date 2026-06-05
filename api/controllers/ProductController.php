@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/../utils/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
 class ProductController {
     private $productModel;
@@ -16,6 +17,7 @@ class ProductController {
         if (isset($_GET['category'])) $filters['category'] = $_GET['category'];
         if (isset($_GET['status'])) $filters['status'] = $_GET['status'];
         if (isset($_GET['search'])) $filters['search'] = $_GET['search'];
+        if (isset($_GET['user_id'])) $filters['user_id'] = (int)$_GET['user_id'];
 
         $products = $this->productModel->findAll($filters);
         Response::success($products);
@@ -30,7 +32,7 @@ class ProductController {
     }
 
     public function store() {
-        $user = AuthMiddleware::authenticate();
+        $user = RoleMiddleware::requireSeller();
         $input = json_decode(file_get_contents('php://input'), true);
 
         $errors = $this->validate($input);
@@ -46,7 +48,7 @@ class ProductController {
     }
 
     public function update($id) {
-        $user = AuthMiddleware::authenticate();
+        $user = RoleMiddleware::requireSeller();
         $input = json_decode(file_get_contents('php://input'), true);
 
         $product = $this->productModel->findById($id);
@@ -54,7 +56,8 @@ class ProductController {
             Response::error('Product not found', 404);
         }
 
-        $updated = $this->productModel->update($id, $input, $user['id']);
+        $userId = $user['role'] === 'admin' ? null : $user['id'];
+        $updated = $this->productModel->update($id, $input, $userId);
         if (!$updated) {
             Response::error('Product not found or not authorized', 404);
         }
@@ -64,9 +67,10 @@ class ProductController {
     }
 
     public function destroy($id) {
-        $user = AuthMiddleware::authenticate();
+        $user = RoleMiddleware::requireSeller();
 
-        $deleted = $this->productModel->delete($id, $user['id']);
+        $userId = $user['role'] === 'admin' ? null : $user['id'];
+        $deleted = $this->productModel->delete($id, $userId);
         if (!$deleted) {
             Response::error('Product not found or not authorized', 404);
         }
@@ -75,14 +79,15 @@ class ProductController {
     }
 
     public function bulkDestroy() {
-        $user = AuthMiddleware::authenticate();
+        $user = RoleMiddleware::requireSeller();
         $input = json_decode(file_get_contents('php://input'), true);
 
         if (empty($input['ids']) || !is_array($input['ids'])) {
             Response::error('IDs array is required', 400);
         }
 
-        $count = $this->productModel->bulkDelete($input['ids'], $user['id']);
+        $userId = $user['role'] === 'admin' ? null : $user['id'];
+        $count = $this->productModel->bulkDelete($input['ids'], $userId);
         Response::success(['deleted' => $count], "$count product(s) deleted successfully");
     }
 

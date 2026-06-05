@@ -31,10 +31,13 @@ class AuthController {
             Response::error('Email already exists', 409);
         }
 
+        $role = 'seller';
+
         $userId = $this->userModel->create(
             $input['name'],
             $input['email'],
-            $input['password']
+            $input['password'],
+            $role
         );
 
         $token = $this->generateToken($userId);
@@ -43,7 +46,8 @@ class AuthController {
             'user' => [
                 'id' => (int)$userId,
                 'name' => $input['name'],
-                'email' => $input['email']
+                'email' => $input['email'],
+                'role' => $role
             ],
             'token' => $token
         ], 'Registration successful', 201);
@@ -68,7 +72,8 @@ class AuthController {
             'user' => [
                 'id' => (int)$user['id'],
                 'name' => $user['name'],
-                'email' => $user['email']
+                'email' => $user['email'],
+                'role' => $user['role']
             ],
             'token' => $token
         ], 'Login successful');

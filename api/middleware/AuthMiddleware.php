@@ -22,7 +22,7 @@ class AuthMiddleware {
 
         $db = (new Database())->getConnection();
         $stmt = $db->prepare(
-            "SELECT t.user_id, t.expires_at, u.name, u.email
+            "SELECT t.user_id, t.expires_at, u.name, u.email, u.role
              FROM auth_tokens t
              JOIN users u ON t.user_id = u.id
              WHERE t.token = :token"
@@ -43,7 +43,8 @@ class AuthMiddleware {
         return [
             'id' => (int)$result['user_id'],
             'name' => $result['name'],
-            'email' => $result['email']
+            'email' => $result['email'],
+            'role' => $result['role']
         ];
     }
 }

@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@heroui/react";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,8 +31,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await api.auth.register(formData.name, formData.email, formData.password);
-      localStorage.setItem("token", res.data.token);
+      const user = await register(formData.name, formData.email, formData.password, "seller");
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
@@ -44,9 +44,9 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-zinc-800">Inscription</h1>
+          <h1 className="text-3xl font-bold text-zinc-800">Inscription vendeur</h1>
           <p className="text-zinc-500 mt-2">
-            Créez votre compte vendeur
+            Créez votre compte pour vendre vos produits
           </p>
         </div>
 
@@ -111,12 +111,12 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? "Inscription..." : "S'inscrire"}
+            {loading ? "Inscription..." : "Créer mon espace vendeur"}
           </button>
 
           <div className="text-center mt-6">
             <p className="text-sm text-zinc-500">
-              Déjà un compte ?{" "}
+              Déjà un espace vendeur ?{" "}
               <Link href="/login" className="text-blue-600 hover:text-blue-700">
                 Se connecter
               </Link>

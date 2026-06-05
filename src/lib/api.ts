@@ -1,4 +1,4 @@
-import type { ApiProduct, ApiAuthData, ApiUser, ApiForgotPasswordResponse } from "./types";
+import type { ApiProduct, ApiAuthData, ApiUser, ApiForgotPasswordResponse, ApiOrder, ApiStats } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -42,10 +42,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email, password }),
       }),
-    register: (name: string, email: string, password: string) =>
+    register: (name: string, email: string, password: string, role?: string) =>
       request<ApiAuthData>("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       }),
     me: () => request<ApiUser>("/auth/me"),
     logout: () => request<null>("/auth/logout", { method: "POST" }),
@@ -86,6 +86,57 @@ export const api = {
       request<{ deleted: number }>("/products/bulk-delete", {
         method: "DELETE",
         body: JSON.stringify({ ids }),
+      }),
+    myProducts: (params?: { search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.set("search", params.search);
+      const qs = searchParams.toString();
+      return request<ApiProduct[]>(`/products${qs ? `?${qs}` : ""}`);
+    },
+  },
+  wishlist: {
+    list: () => request<ApiProduct[]>("/wishlist"),
+    toggle: (productId: number) =>
+      request<{ wishlisted: boolean }>("/wishlist/toggle", {
+        method: "POST",
+        body: JSON.stringify({ product_id: productId }),
+      }),
+    check: (productId: number) =>
+      request<{ wishlisted: boolean }>(`/wishlist/check/${productId}`),
+  },
+  orders: {
+    list: () => request<ApiOrder[]>("/orders"),
+    get: (id: number) => request<ApiOrder>(`/orders/${id}`),
+    create: (items: { product_id: number; quantity?: number }[], buyerName?: string, buyerEmail?: string, buyerPhone?: string, buyerAddress?: string) =>
+      request<ApiOrder>("/orders", {
+        method: "POST",
+        body: JSON.stringify({ items, buyer_name: buyerName, buyer_email: buyerEmail, buyer_phone: buyerPhone, buyer_address: buyerAddress }),
+      }),
+  },
+  admin: {
+    stats: () => request<ApiStats>("/admin/stats"),
+    users: (params?: { role?: string; search?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.role) searchParams.set("role", params.role);
+      if (params?.search) searchParams.set("search", params.search);
+      const qs = searchParams.toString();
+      return request<ApiUser[]>(`/admin/users${qs ? `?${qs}` : ""}`);
+    },
+    updateUserRole: (id: number, role: string) =>
+      request<null>(`/admin/users/${id}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ role }),
+      }),
+    deleteUser: (id: number) =>
+      request<null>(`/admin/users/${id}`, { method: "DELETE" }),
+    products: () => request<ApiProduct[]>("/admin/products"),
+    deleteProduct: (id: number) =>
+      request<null>(`/admin/products/${id}`, { method: "DELETE" }),
+    orders: () => request<ApiOrder[]>("/admin/orders"),
+    updateOrderStatus: (id: number, status: string) =>
+      request<null>(`/admin/orders/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
       }),
   },
 };

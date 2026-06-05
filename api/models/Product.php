@@ -31,6 +31,11 @@ class Product {
             $params[':search2'] = '%' . $filters['search'] . '%';
         }
 
+        if (!empty($filters['user_id'])) {
+            $sql .= " AND user_id = :user_id";
+            $params[':user_id'] = $filters['user_id'];
+        }
+
         $sql .= " ORDER BY created_at DESC";
 
         $stmt = $this->conn->prepare($sql);
@@ -76,9 +81,13 @@ class Product {
         return $this->conn->lastInsertId();
     }
 
-    public function update($id, $data, $userId) {
+    public function update($id, $data, $userId = null) {
         $fields = [];
-        $params = [':id' => $id, ':user_id' => $userId];
+        $params = [':id' => $id];
+
+        if ($userId !== null) {
+            $params[':user_id'] = $userId;
+        }
 
         $allowedFields = ['title', 'description', 'category', 'sale_price',
             'original_price', 'discount', 'warranty', 'rating', 'sales',
@@ -96,29 +105,38 @@ class Product {
         }
 
         $sql = "UPDATE products SET " . implode(', ', $fields) .
-               " WHERE id = :id AND user_id = :user_id";
+               " WHERE id = :id";
+        if ($userId !== null) {
+            $sql .= " AND user_id = :user_id";
+        }
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount() > 0;
     }
 
-    public function delete($id, $userId) {
-        $stmt = $this->conn->prepare(
-            "DELETE FROM products WHERE id = :id AND user_id = :user_id"
-        );
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
+    public function delete($id, $userId = null) {
+        $sql = "DELETE FROM products WHERE id = :id";
+        $params = [':id' => $id];
+        if ($userId !== null) {
+            $sql .= " AND user_id = :user_id";
+            $params[':user_id'] = $userId;
+        }
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
         return $stmt->rowCount() > 0;
     }
 
-    public function bulkDelete($ids, $userId) {
+    public function bulkDelete($ids, $userId = null) {
         if (empty($ids)) return false;
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $params = $ids;
-        $params[] = $userId;
-
-        $sql = "DELETE FROM products WHERE id IN ($placeholders) AND user_id = ?";
+        $sql = "DELETE FROM products WHERE id IN ($placeholders)";
+        if ($userId !== null) {
+            $sql .= " AND user_id = ?";
+            $params[] = $userId;
+        }
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount();
